@@ -4,7 +4,7 @@ import sys
 spaces = [' ', '\n', '\t'];
 keywords = ['else', 'if','int', 'while', 'return', 'float', 'void'];
 specSymbolsG1 = ['+','-','*','/','<','=',';',',','(',')','[',']','{','}', '!', '>'];
-specSymbolsG2 = ['<=','>=','==','!=']
+specSymbolsG2 = ['<','>','=','!']
 numbers = ['1','2','3','4','5','6','7','8','9','0'];
 alphabet = ['a-zA-Z']
 
@@ -50,7 +50,11 @@ def main():
                     #Err
                 if d in spaces or d in specSymbolsG1:
                     #place word into a category and check if it was a reserved word
-
+            if char in numbers:
+                word+=char
+                d = next(line, offset)
+                if d in numbers:
+                    #check if it's a part of a bigger number
         word = '';
         lineDic = '';
         count = 0;
