@@ -4,15 +4,9 @@ import sys
 spaces = [' ', '\n', '\t'];
 keywords = ['else', 'if','int', 'while', 'return', 'float', 'void'];
 specSymbolsG1 = ['+','-','*','/','<','=',';',',','(',')','[',']','{','}', '!', '>'];
-specSymbolsG2 = ['<','>','=','!']
-numbers = ['1','2','3','4','5','6','7','8','9','0'];
-alphabet = ['a-zA-Z']
-
-class T(object):
-    def __init__(self, type, depth):
-        self.type = type
-        self.depth = depth
-
+specSymbolsG2 = ['<','>','=','!'];
+numbers = ['0-9'];
+alphabet = ['a-zA-Z'];
 
 def main():
     inputFile = sys.argv[1];
@@ -20,21 +14,19 @@ def main():
     content = fileVar.readlines();
     offset = -1;
     voffset = -1;
-    current = 0;
-    isStart = 1;
-
-    keywordOn = 0;
-    idOn = 0;
-    j=0;
-    word = ''
+    current = 'start';
+    moveToNext = 0;
+    word = '';
+    specWord = '';
+    depth = 0;
     for line in content:
         for char in line:
             if char=='/':
-                res = processComment(line, offset);
+                res = processComment(line, offset, content, voffset);
                 if res == 1:
-                    print line[offset:]
+                    print 'INPUT: ', line[(offset+1):]
                     offset = -1
-                    voffset += 1
+                    break
                 elif res == 0:
                     pass
                 elif res == [-1,-1]:
@@ -43,40 +35,63 @@ def main():
                     break;
                 else:
                     printLines(offset, voffset,res, content)
+                    break;
             if char in alphabet:
-                word+=char
-                d = next(line, offset)
-                if d in numbers:
-                    #Err
-                if d in spaces or d in specSymbolsG1:
-                    #place word into a category and check if it was a reserved word
-            if char in numbers:
-                word+=char
-                d = next(line, offset)
-                if d in numbers:
-                    #check if it's a part of a bigger number
-        word = '';
-        lineDic = '';
-        count = 0;
-        i = 0;
-        for c in line:
-            if c in spaces:
-                if isStart:
-                    continue;
+                if current != 'number':
+                    word+=char
+                    offset += 1;
+                    current = 'word';
                 else:
-                    if word.len>0:
-                        processWord(word,count);
-                        count+=1;
-                        word='';
-            elif c in specSymbols:
-                processWord(word,count);
-            elif c == '/':
-                processComment(line[i:], content, i, j);
-            i+=1;
+                    # if char == 'E':
 
+                    processWord(word, depth)
+                    print 'Error!: ', char
+
+            elif char in numbers:
+                if current != 'word':
+                    current = 'number'
+                    word+=char
+                    offset += 1
+            elif char in spaces:
+                offset+=1
+                if current == 'start':
+                    continue
+                elif len(word) > 0:
+                    if current == 'error':
+                        print 'Error: ', word;
+                    else:
+                        processWord(word, depth)
+                    word = '';
+                    current = 'space';
+
+            elif char in specSymbolsG2:
+                d = next(line, offset)
+                current = 'spec'
+                if d == '=':
+                    specWord+=char+d
+                    print specWord, '\n'
+                    offset+=2
+                    processWord(word, depth)
+                    word = ''
+                    specWord=''
+                elif char in specSymbolsG1:
+                    processWord(word, depth)
+                    word = ''
+                    offset += 1
+                    specWord += char
+                    print specWord
+                    specWord = ''
+            elif char in specSymbolsG1:
+                current = 'spec'
+                processWord(word, depth)
+                offset += 1;
+                word = ''
+                specWord += char
+                print specWord
+                specWord = ''
+            elif current == 'error':
+                word += char;
         voffset+=1;
-        # else:
-        #    print "Read a character:", c;
     fileVar.close();
 
 
@@ -93,49 +108,51 @@ def next(line, offset):
         return None
 
 
-def processWord(word, count):
-    dicEntry='';
+def processWord(word, depth):
+   # dicEntry='';
     if word in keywords:
-        str = 'keyword'+count;
-        dicEntry[str] = word;
-    elif word in specSymbols:
-        str = 'specSymb' + count;
-        dicEntry[str] = word;
+        str = 'keyword: '+ word;
     elif aNumber(word, numbers):
-        str = 'NUM' + count;
-        dicEntry[str] = word;
+        str = 'NUM: ' + word;
+    else:
+        str = 'ID: ' + word + ' ' + depth;
+    print str;
 
 
 def parseLine(line, offset, content, voffset, c1, c2):
-    for i in range (offset+3,len(line)):
-        if line[i] == c1 and line[i+1] == c2:
-            return [i, voffset];
+    cDepth = 1;
+    i = offset + 3
+    while i < len(line):
+        if line[i] == c2 and line[i+1] == c1:
+            cDepth += 1;
+            i+=2
+            continue;
+        elif line[i] == c1 and line[i+1] == c2:
+            cDepth -= 1;
+            if cDepth == 0:
+                return [i, voffset];
+            i+=1;
+        i+=1;
     for i in range (voffset+2, len(content)):
-        line = content[i]
-        for j in range (0, len(line)):
-            if line[j] == c1 and line[j+1] == c2:
-                return [j, i];
+        line = content[i];
+        for j in range (0, len(line)-1):
+            if line[j] == c2 and line[j+1] == c1:
+                cDepth += 1;
+                continue;
+            elif line[j] == c1 and line[j+1] == c2:
+                cDepth -= 1;
+                if cDepth == 0:
+                    return [j, i];
     return [-1,-1];
 
 def processComment(line, offset, content, voffset):
     c = next(line, offset);
-    if c != '/' or c != '*':
+    if c != '/' and c != '*':
         return 0;
     elif c == '/':
         return 1;
     elif c == '*':
         return parseLine(line, offset, content, voffset, '*', '/');
-
-
-    for c in line:
-        if c != '/' and c != '*': #Not a comment, just a division
-            return;
-        if c == '*':
-        while d != '\n':
-            d = fileVar.read(1);
-            str+=d;
-        return str;
-    if d =='*':
 
 def aNumber(line, numbers):
     for char in line:
@@ -151,19 +168,20 @@ def printLines(offset, voffset, res, content):
     if ln == -1:
         line = content[res[0]]
         print line[offset+2:res[1]]
-    elif ln == 0
+    elif ln == 0:
         line = content[voffset+2]
         print line[offset+2:]
         line = content[res[0]]
         print line[:res[1]]
     else:
-        i = voffset+2
+        i = voffset+1
         line = content[i]
-        print line[offset+2:]
-        while i<res[0]:
+        print 'INPUT: ', line[offset+1:]
+        while i<res[1]:
             line = content[i]
-            print line
-        line = content[res[0]]
+            print 'INPUT: ', line
+            i+=1
+        line = content[res[1]]
         print line[:res[1]]
 
 main();
