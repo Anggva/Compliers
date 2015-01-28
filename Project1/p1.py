@@ -4,10 +4,11 @@ import sys
 spaces = [' ', '\n', '\t'];
 keywords = ['else', 'if','int', 'while', 'return', 'float', 'void'];
 arithmetSymb = ['+','-','*','/'];
-compareSymb = ['<','>', '>=', '<=', '==', '!='];
+compareSymb = ['<','>','!', '='];
 delimiters = [';',',','(',')','[',']','{','}']
+allDelimiters = arithmetSymb + ['<','>',';','(',')','[',']','{','}'];
 floatSymb = ['E', '.', '+', '-'];
-superset = arithmetSymb+compareSymb+delimiters+floatSymb
+superset = arithmetSymb+compareSymb+delimiters+['='];
 numbers = ['0','1','2','3','4','5','6','7','8','9'];
 alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
@@ -16,34 +17,38 @@ def main():
     fileVar = open(inputFile, 'r');
     content = fileVar.readlines();
     voffset = -1;
-    current = 'start';
-    moveToNext = 0;
     word = '';
     specWord = '';
     depth = 0;
     i = 0;
     while i < len(content):
+        current = 'start';
+        floatC = '';
         line = content[i];
-        offset = -1;
-        j = 0;
+        j = removeSpaces(line);
+        # j = 0;
+        if notEmpty(line):
+            print 'INPUT:', line[j:len(line)-1];
+        else:
+            print line[:len(line)-1];
+        offset = j-1;
         while j < len(line):
             char = line[j];
             if char=='/':
+                processWord(word, depth);
+                word = ''
                 res = processComment(line, offset, content, voffset);
-                if res == 0:
+                if res == 0: #Not a comment
                     pass
-                elif res == 1:
-                    current = 'comment';
-                    print 'INPUT: ', line[(offset+1):len(line)-1]
+                elif res == 1: #Comment starts with //
                     break
-                elif res == [-1,-1]:
-                    current = 'comment';
-                    print 'INPUT: ', line[offset:]
-                    printLines(voffset, content)
+                elif res == [-1,-1]: #Comment started but never ended
+                    printLines(voffset, res, content);
+                    i = len(content);
                     break;
-                else:
+                else: #Coment starts with /* and ends with */
                     current = 'comment';
-                    printLines(offset, voffset,res, content)
+                    printLines(voffset, res, content)
                     if res[1] != voffset:
                         voffset = res[1];
                         i = voffset+1;
@@ -52,81 +57,146 @@ def main():
                         break;
                     else:
                         offset = res[2];
-                        j = offset+1;
-                        char = next(line,offset);
-            if char in superset:
-                
-
-            if char in alphabet:
+                        j = res[2]+1;
+                        char = line[j];
+            if current == 'number' and char in floatSymb:
+                if char == '.' and floatC == '':
+                   word += char;
+                   floatC = char;
+                elif char == 'E' and (floatC == '' or floatC == '.'):
+                    if j < len(line) - 2:
+                        d = next(line, offset);
+                        e = next(line, offset+1);
+                        if (d == '+' or d =='-') and e in numbers:
+                            word += char;
+                            floatC = char;
+                        elif d in numbers:
+                            word += char;
+                            floatC = char;
+                        else:
+                            processWord(word, depth);
+                            word = ''
+                            current = 'error';
+                            k = processError(line, j);
+                            offset = k;
+                            j = k+1;
+                            continue;
+                    else:
+                        processWord(word, depth);
+                        word = ''
+                        current = 'error';
+                        k = processError(line, j);
+                        offset = k;
+                        j = k+1;
+                        continue;
+                elif (char == '+' or char == '-') and floatC == 'E':
+                    word += char;
+                    floatC = char;
+                elif char == '+' or char == '-':
+                    current = 'arithmetic symbol';
+                    offset -=1;
+                    j-=1;
+                else:
+                    processWord(word, depth);
+                    word = ''
+                    current = 'error';
+                    k = processError(line, j);
+                    offset = k;
+                    j = k+1;
+                    continue
+                offset += 1;
+            elif char in superset:
+                processWord(word, depth);
+                word = ''
+                if char in arithmetSymb:
+                    current = 'arithmetic symbol'
+                    print char;
+                    offset += 1;
+                elif char in compareSymb:
+                    d = next(line, offset);
+                    if d == '=':
+                        current = 'comparison';
+                        specWord+=char+d
+                        print specWord
+                        offset+=2
+                        j+=2;
+                        specWord=''
+                        continue;
+                    elif char == '!':
+                        current = 'error';
+                        k = processError(line, j);
+                        offset = k;
+                        j = k+1;
+                        continue;
+                    else:
+                        current = 'comparison'
+                        print char
+                        offset +=1;
+                elif char in delimiters:
+                    current = 'delimiter';
+                    if char == '{':
+                        depth += 1;
+                        offset +=1;
+                        print char
+                    elif char == '}':
+                        depth -= 1;
+                        offset +=1;
+                        print char;
+                    else:
+                        offset += 1;
+                        print char;
+                else:
+                    current = 'specSymbol'
+                    offset += 1;
+                    print char;
+            elif char in alphabet:
                 if current != 'number':
                     word+=char
                     offset += 1;
-                    # j+=1;
                     current = 'word';
                 else:
-                    # if char == 'E':
-
-                    processWord(word, depth)
-                    print 'Error!: ', char
-
+                    processWord(word, depth);
+                    word = '';
+                    current = 'error'
+                    k = processError(line, j);
+                    offset = k;
+                    j = k+1;
+                    continue;
             elif char in numbers:
                 if current != 'word':
                     current = 'number'
                     word+=char
                     offset += 1
-                    # j+=1
+                else:
+                    processWord(word, depth);
+                    word = '';
+                    current = 'error'
+                    k = processError(line, j);
+                    offset = k;
+                    j = k+1;
+                    continue;
             elif char in spaces:
                 offset+=1
                 if current == 'start' or current == 'comment':
                     j+=1
                     continue
-                elif len(word) > 0:
-                    if current == 'error':
-                        print 'Error: ', word;
-                    else:
-                        processWord(word, depth)
+                else:
+                    processWord(word, depth)
                     word = '';
                     current = 'space';
-
-            elif char in specSymbolsG2:
-                d = next(line, offset)
-                current = 'spec'
-                if d == '=':
-                    specWord+=char+d
-                    print specWord, '\n'
-                    offset+=2
-                    processWord(word, depth)
-                    word = ''
-                    specWord=''
-                elif char in specSymbolsG1:
-                    processWord(word, depth)
-                    word = ''
-                    offset += 1
-                    specWord += char
-                    print specWord
-                    specWord = ''
-            elif char in specSymbolsG1:
-                current = 'spec'
-                if len(word) > 0:
-                    processWord(word, depth)
-                offset += 1;
-                word = ''
-                specWord += char
-                print specWord
-                specWord = ''
-            elif current == 'error':
-                word += char;
+            else:
+                processWord(word, depth)
+                word = '';
+                current = 'error';
+                k = processError(line, j);
+                offset = k;
+                j = k+1;
+                continue;
             j+=1
         voffset+=1;
         i+=1;
     fileVar.close();
 
-
-def previous(line, offset):
-    if line[offset] != None:
-        return line[offset]
-    else:
-        return None
 
 def next(line, offset):
     if line[offset+2] != None:
@@ -136,14 +206,14 @@ def next(line, offset):
 
 
 def processWord(word, depth):
-   # dicEntry='';
-    if word in keywords:
-        s = 'keyword: '+ word;
-    elif aNumber(word, numbers):
-        s = 'NUM: ' + word;
-    else:
-        s = 'ID: ' + word + ' ' + str(depth);
-    print s;
+    if len(word) > 0:
+        if word in keywords:
+            s = 'keyword: '+ word;
+        elif aNumber(word, numbers):
+            s = 'NUM: ' + word;
+        else:
+            s = 'ID: ' + word + ' |depth:' + str(depth);
+        print s;
 
 
 def parseLine(line, offset, content, voffset, c1, c2):
@@ -175,6 +245,7 @@ def parseLine(line, offset, content, voffset, c1, c2):
                     return [offset,i-1,j+2];
                 j+=1;
             j+=1
+        i+=1;
     return [-1,-1];
 
 def processComment(line, offset, content, voffset):
@@ -188,33 +259,48 @@ def processComment(line, offset, content, voffset):
 
 def aNumber(line, numbers):
     for char in line:
-        if char not in numbers:
+        if char not in numbers and char not in floatSymb:
             return 0;
     return 1;
-def printLines(voffset, content):
-    for i in range (voffset+2, len(content)):
-        print content[i][0:]
 
-def printLines(offset, voffset, res, content):
+def printLines(voffset, res, content):
+    if res == [-1, -1]:
+        for i in range (voffset+2, len(content)):
+            print 'INPUT:',content[i][0:]
     ln = res[1] - voffset;
-    if ln == 0:
+    if ln == 1:
         line = content[res[1]+1]
-        print 'INPUT: ', line[res[0]+1:res[2]]
-    elif ln == 1:
-        line = content[voffset+1]
-        print 'INPUT: ', line[res[0]+1:len(line)-1]
-        line = content[res[1]+1]
-        print 'INPUT: ', line[:res[2]]
-    else:
-        i = voffset+1
-        line = content[i]
-        print 'INPUT: ', line[offset+1:]
-        i+=1
-        while i<res[1]:
+        print 'INPUT:', line[:len(line)-1]
+    elif ln>0:
+        i = voffset+2
+        while i<res[1]+1:
             line = content[i]
-            print 'INPUT: ', line[:len(line)-1]
+            print 'INPUT:', line[:len(line)-1]
             i+=1
-        line = content[res[1]]
-        print line[:res[2]]
+        line = content[res[1]+1]
+        print 'INPUT:',line[:res[2]]
 
+def processError(line, offset):
+    errorMessage = 'Error: '
+    i = offset;
+    while line[i] not in spaces and line[i] not in allDelimiters:
+        errorMessage += line[i];
+        i+=1;
+    print errorMessage;
+    return i-1;
+
+def notEmpty(line):
+    if len(line) > 1:
+        for char in line:
+            if char not in spaces:
+                return 1;
+    return 0;
+def removeSpaces(line):
+    i = 0;
+    for char in line:
+        if char not in spaces:
+            return i;
+        else:
+            i+=1;
+    return 0;
 main();

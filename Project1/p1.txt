@@ -1,0 +1,157 @@
+Vasilina Vlasova
+COP 4620 CONSTRUCTION OF LANGUAGE TRANSLATORS
+Project 1
+01/27/2015 
+
+The goal of this project is to construct a lexical analyser using the grammar definition in the appendix of the text. The lexical analyzer returns tokens such as IDs, keywords, special symbols, and numbers. Comments and spaces are ignored. Comments that start with /* and end with */ can be nested. Comments that start with // cannot be nested. IDs can be nested as well (that means that a new method started with {}) and nesting depth is displayed on the output. Float has been added for the purposes of this project, even though float is not included in the original textbook grammar. The program is implemented in Python 2.7. Identifier name can consist of alphabetical characters only and cannot include numbers or any other characters.
+
+The results of the program's work are shown below:
+Input: 
+/**/          /*/* */   */
+/*/*/****This**********/*/    */
+/**************/
+/*************************
+i = 333;        ******************/       */
+
+iiii = 3@33;
+
+int g 4 cd (int u, int v)      {
+if(v == >= 0) return/*a comment*/ u;
+else ret_urn gcd(vxxxxxxvvvvv, u-u/v*v);
+       /* u-u/v*v == u mod v*/
+!
+{ float k=12.35E-50;
+p=12E-50+15;
+float m> 12.35-50;
+ijfjsk jfk=12.4E
+float n=3453fjskfjsd23;}   
+}
+
+int a[3] >45;
+
+return void while       void main() /*jkvawriop'gjbaopn'rbjop'ae
+dwefwef/*/sjfwknkow;bvnjeFPOJPFOJEPOFweo
+*/japckjpvojqeopvwjbwjbowebjp
+jsfpj=03 jsfdp */
+
+
+Output:
+INPUT: /**/          /*/* */   */
+INPUT: /*/*/****This**********/*/    */
+INPUT: /**************/
+INPUT: /*************************
+INPUT: i = 333;        ******************/       */
+*
+/
+
+INPUT: iiii = 3@33;
+ID: iiii |depth:0
+=
+NUM: 3
+Error: @33
+;
+
+INPUT: int g 4 cd (int u, int v)      {
+keyword: int
+ID: g |depth:0
+NUM: 4
+ID: cd |depth:0
+(
+keyword: int
+ID: u |depth:0
+,
+keyword: int
+ID: v |depth:0
+)
+{
+INPUT: if(v == >= 0) return/*a comment*/ u;
+keyword: if
+(
+ID: v |depth:1
+==
+>=
+NUM: 0
+)
+keyword: return
+ID: u |depth:1
+;
+INPUT: else ret_urn gcd(vxxxxxxvvvvv, u-u/v*v);
+keyword: else
+ID: ret |depth:1
+Error: _urn
+ID: gcd |depth:1
+(
+ID: vxxxxxxvvvvv |depth:1
+,
+ID: u |depth:1
+-
+ID: u |depth:1
+/
+ID: v |depth:1
+*
+ID: v |depth:1
+)
+;
+INPUT: /* u-u/v*v == u mod v*/
+INPUT: !
+Error: !
+INPUT: { float k=12.35E-50;
+{
+keyword: float
+ID: k |depth:2
+=
+NUM: 12.35E-50
+;
+INPUT: p=12E-50+15;
+ID: p |depth:2
+=
+NUM: 12E-50
++
+NUM: 15
+;
+INPUT: float m> 12.35-50;
+keyword: float
+ID: m |depth:2
+>
+NUM: 12.35
+-
+NUM: 50
+;
+INPUT: ijfjsk jfk=12.4E
+ID: ijfjsk |depth:2
+ID: jfk |depth:2
+=
+NUM: 12.4
+Error: E
+INPUT: float n=3453fjskfjsd23;}   
+keyword: float
+ID: n |depth:2
+=
+NUM: 3453
+Error: fjskfjsd23
+;
+}
+INPUT: }
+}
+
+INPUT: int a[3] >45;
+keyword: int
+ID: a |depth:0
+[
+NUM: 3
+]
+>
+NUM: 45
+;
+
+INPUT: return void while       void main() /*jkvawriop'gjbaopn'rbjop'ae
+keyword: return
+keyword: void
+keyword: while
+keyword: void
+ID: main |depth:0
+(
+)
+INPUT: dwefwef/*/sjfwknkow;bvnjeFPOJPFOJEPOFweo
+INPUT: */japckjpvojqeopvwjbwjbowebjp
+INPUT: jsfpj=03 jsfdp */
