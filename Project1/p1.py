@@ -12,7 +12,12 @@ superset = arithmetSymb+compareSymb+delimiters+['='];
 numbers = ['0','1','2','3','4','5','6','7','8','9'];
 alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
+tokens = [];
+
 def main():
+    if len(sys.argv) < 2:
+        print 'Error, no input file!'
+        return 0;
     inputFile = sys.argv[1];
     fileVar = open(inputFile, 'r');
     content = fileVar.readlines();
@@ -26,7 +31,6 @@ def main():
         floatC = '';
         line = content[i];
         j = removeSpaces(line);
-        # j = 0;
         if notEmpty(line):
             print 'INPUT:', line[j:len(line)-1];
         else:
@@ -46,7 +50,7 @@ def main():
                     printLines(voffset, res, content);
                     i = len(content);
                     break;
-                else: #Coment starts with /* and ends with */
+                else: #Comment starts with /* and ends with */
                     current = 'comment';
                     printLines(voffset, res, content)
                     if res[1] != voffset:
@@ -183,6 +187,7 @@ def main():
                 else:
                     processWord(word, depth)
                     word = '';
+                    floatC = '';
                     current = 'space';
             else:
                 processWord(word, depth)
@@ -206,13 +211,22 @@ def next(line, offset):
 
 
 def processWord(word, depth):
+    global tokens;
+    newToken = [];
     if len(word) > 0:
         if word in keywords:
             s = 'keyword: '+ word;
+            newToken.append('keyword');
+            newToken.append(word);
         elif aNumber(word, numbers):
             s = 'NUM: ' + word;
+            newToken.append('NUM');
+            newToken.append(word);
         else:
             s = 'ID: ' + word + ' |depth:' + str(depth);
+            newToken.append('ID');
+            newToken.append(word);
+        tokens.append(newToken);
         print s;
 
 
@@ -295,6 +309,7 @@ def notEmpty(line):
             if char not in spaces:
                 return 1;
     return 0;
+
 def removeSpaces(line):
     i = 0;
     for char in line:
